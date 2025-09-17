@@ -1,0 +1,5 @@
+{
+  "name": "InstaCaption AI",
+  "description": "An AI-powered application that generates engaging Instagram captions, including a title, body text, and relevant hashtags, from an uploaded image using the Gemini API.",
+  "requestFramePermissions": []
+}
