@@ -8,6 +8,26 @@ import Loader from './components/Loader';
 import { CameraIcon } from './components/icons/CameraIcon';
 import { SparklesIcon } from './components/icons/SparklesIcon';
 import ProgressBar from './components/ProgressBar';
+import UrlInputForm from './components/UrlInputForm';
+import { UploadIcon } from './components/icons/UploadIcon';
+import { LinkIcon } from './components/icons/LinkIcon';
+
+const TabButton: React.FC<{
+    active: boolean;
+    onClick: () => void;
+    children: React.ReactNode;
+}> = ({ active, onClick, children }) => (
+    <button
+        onClick={onClick}
+        className={`w-1/2 py-3 px-4 text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-300 ${
+            active
+                ? 'bg-gray-800 text-white'
+                : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+        }`}
+    >
+        {children}
+    </button>
+);
 
 const App: React.FC = () => {
     const [imageFile, setImageFile] = useState<File | null>(null);
@@ -16,12 +36,46 @@ const App: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
+    const [inputMethod, setInputMethod] = useState<'upload' | 'url'>('upload');
+    const [isUrlLoading, setIsUrlLoading] = useState<boolean>(false);
+    const [urlError, setUrlError] = useState<string | null>(null);
+
     const handleImageChange = (file: File) => {
         setImageFile(file);
         setPreviewUrl(URL.createObjectURL(file));
         setCaption(null);
         setError(null);
+        setUrlError(null);
     };
+
+    const handleUrlLoad = useCallback(async (url: string) => {
+        setIsUrlLoading(true);
+        setUrlError(null);
+        setError(null);
+        setCaption(null);
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch image. Server responded with ${response.status}.`);
+            }
+            const blob = await response.blob();
+            if (!blob.type.startsWith('image/')) {
+                throw new Error('The provided URL does not point to a valid image.');
+            }
+
+            const fileName = url.split('/').pop()?.split('?')[0] || 'image-from-url';
+            const imageFile = new File([blob], fileName, { type: blob.type });
+            handleImageChange(imageFile);
+
+        } catch (err) {
+            console.error("URL fetch error:", err);
+            const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
+            setUrlError(`${errorMessage} Note: Some images may not load due to server restrictions (CORS).`);
+        } finally {
+            setIsUrlLoading(false);
+        }
+    }, []);
 
     const handleGenerateCaption = useCallback(async () => {
         if (!imageFile) {
@@ -71,7 +125,38 @@ const App: React.FC = () => {
                 <main className="bg-gray-800/50 backdrop-blur-sm p-8 rounded-2xl shadow-2xl shadow-purple-500/10 border border-purple-500/20">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="flex flex-col space-y-6">
-                            <ImageUploader onImageSelect={handleImageChange} previewUrl={previewUrl} />
+                             <div className="bg-gray-800 rounded-lg border border-gray-700">
+                                <ImageUploader onImageSelect={handleImageChange} previewUrl={previewUrl} />
+                                <div className="border-t border-gray-700">
+                                    <div className="flex">
+                                        <TabButton active={inputMethod === 'upload'} onClick={() => setInputMethod('upload')}>
+                                            <UploadIcon className="w-5 h-5" />
+                                            Upload File
+                                        </TabButton>
+                                        <TabButton active={inputMethod === 'url'} onClick={() => setInputMethod('url')}>
+                                            <LinkIcon className="w-5 h-5" />
+                                            From URL
+                                        </TabButton>
+                                    </div>
+                                    <div className="p-4 min-h-[120px] flex items-center justify-center">
+                                        {inputMethod === 'upload' && (
+                                            <p className="text-center text-sm text-gray-400">
+                                                Click or drag & drop an image into the area above.
+                                                <br />
+                                                PNG, JPG, or WEBP supported.
+                                            </p>
+                                        )}
+                                        {inputMethod === 'url' && (
+                                            <UrlInputForm 
+                                                onUrlSubmit={handleUrlLoad}
+                                                isLoading={isUrlLoading}
+                                                error={urlError}
+                                            />
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
                             <button
                                 onClick={handleGenerateCaption}
                                 disabled={!imageFile || isLoading}
