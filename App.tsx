@@ -7,6 +7,7 @@ import CaptionDisplay from './components/CaptionDisplay';
 import Loader from './components/Loader';
 import { CameraIcon } from './components/icons/CameraIcon';
 import { SparklesIcon } from './components/icons/SparklesIcon';
+import ProgressBar from './components/ProgressBar';
 
 const App: React.FC = () => {
     const [imageFile, setImageFile] = useState<File | null>(null);
@@ -33,18 +34,22 @@ const App: React.FC = () => {
         setCaption(null);
 
         try {
-            const reader = new FileReader();
-            reader.readAsDataURL(imageFile);
-            reader.onloadend = async () => {
-                const base64String = (reader.result as string).split(',')[1];
-                const mimeType = imageFile.type;
-                
-                const result = await generateInstagramCaption(base64String, mimeType);
-                setCaption(result);
-            };
-            reader.onerror = () => {
-                 setError("Failed to read the image file.");
-            }
+            const base64String = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(imageFile);
+                reader.onload = () => {
+                    if (typeof reader.result === 'string') {
+                        resolve(reader.result.split(',')[1]);
+                    } else {
+                        reject(new Error("Failed to read file as a base64 string."));
+                    }
+                };
+                reader.onerror = () => reject(new Error("Failed to read the image file."));
+            });
+
+            const mimeType = imageFile.type;
+            const result = await generateInstagramCaption(base64String, mimeType);
+            setCaption(result);
         } catch (err) {
             setError(err instanceof Error ? err.message : "An unknown error occurred.");
         } finally {
@@ -94,8 +99,9 @@ const App: React.FC = () => {
                                 </div>
                             )}
                             {isLoading && !error && (
-                                <div className="text-center text-gray-400">
-                                    <p>AI is thinking... Give it a moment to craft the perfect caption for your amazing picture! ✨</p>
+                                <div className="space-y-4 text-center">
+                                    <p className="text-gray-400">AI is thinking... Give it a moment to craft the perfect caption for your amazing picture! ✨</p>
+                                    <ProgressBar />
                                 </div>
                             )}
                             {!isLoading && caption && (
