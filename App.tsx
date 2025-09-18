@@ -1,11 +1,10 @@
-
 import React, { useState, useCallback } from 'react';
 import { generateInstagramCaption } from './services/geminiService';
 import { type InstagramPost } from './types';
 import ImageUploader from './components/ImageUploader';
 import CaptionDisplay from './components/CaptionDisplay';
 import Loader from './components/Loader';
-import { CameraIcon } from './components/icons/CameraIcon';
+import { AppLogoIcon } from './components/icons/AppLogoIcon';
 import { SparklesIcon } from './components/icons/SparklesIcon';
 import ProgressBar from './components/ProgressBar';
 import UrlInputForm from './components/UrlInputForm';
@@ -116,7 +115,7 @@ const App: React.FC = () => {
             <div className="w-full max-w-4xl mx-auto">
                 <header className="text-center mb-8">
                     <h1 className="text-5xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 flex items-center justify-center gap-3">
-                        <CameraIcon className="w-12 h-12" />
+                        <AppLogoIcon className="w-12 h-12" />
                         InstaCaption AI
                     </h1>
                     <p className="text-gray-300 mt-2 text-lg">Generate the perfect Instagram caption from your image.</p>
